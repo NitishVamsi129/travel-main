@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: travel_user
+      POSTGRES_PASSWORD: change_this_password
+      POSTGRES_DB: travel_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=postgresql://travel_user:change_this_password@db:5432/travel_db
+      # add other envs: JWT_SECRET, REDIS_URL etc.
+    ports:
+      - "4000:4000"
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"   # host:container -> serve nginx port 80
+    restart: on-failure
+
+volumes:
+  db_data:
